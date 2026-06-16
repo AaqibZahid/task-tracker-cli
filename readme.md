@@ -4,7 +4,11 @@
 
 ## Code Style
 
+The code style is a hybrid, functions for the command logics and the each task is encapsulated with the help of OOP paradigm
+
 ## Features
+
+## Additional Things I added myself
 
 ## How to run
 
