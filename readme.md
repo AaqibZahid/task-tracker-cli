@@ -8,7 +8,9 @@ The code style is a hybrid, functions for the command logics and the each task i
 
 ## Features
 
-## Additional Things I added myself
+delete - deletest a task. Note: if the deleted task is in the middle the ids of all tasks after the deleted task will get updated
+
+## important concepts learned from the project
 
 ## How to run
 
