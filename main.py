@@ -45,7 +45,8 @@ content = {
     "tasks": []
 }
 
-if os.path.getsize(file_path) == 0:
+# check if the file is missing OR if it's completely empty (0 bytes)
+if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
     with open(file_path, "w", newline="") as file:
         json.dump(content, file, indent=4)
 else:
