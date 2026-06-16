@@ -1,19 +1,7 @@
 import argparse
 import json
-import random
 import os
-import time
 from datetime import datetime
-
-file_path = "tasks.json"
-
-class Task:
-    def __init__(self, id, description, status, createdAt, updatedAt):
-        self.id = id
-        self.description = description
-        self.status = status
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
 
 parser = argparse.ArgumentParser(
     description="task tracker CLI tool"
@@ -46,76 +34,104 @@ mark_in_progress_command_parser.add_argument("id", type=int, action="store", met
 
 mark_done_command_parser.add_argument("id", type=int, action="store", metavar="<TASK_TO_MARK>")
 
-list_command_parser.add_argument("status", type=str, nargs="?", choices=["todo", "in-progress", "done"], help="Filter tasks by status, which can be either to-do, in progress, or done" )
+list_command_parser.add_argument("status", type=str, nargs="?", choices=["to-do", "in-progress", "done"], help="Filter tasks by status, which can be either to-do, in progress, or done" )
 
 args = parser.parse_args()
 
+# --- setting up json file ---
+file_path = "tasks.json"
+content = {
+    "last_id": 0,
+    "tasks": []
+}
+
+if os.path.getsize(file_path) == 0:
+    with open(file_path, "w", newline="") as file:
+        json.dump(content, file, indent=4)
+else:
+    with open(file_path, "r") as file:
+        content = json.load(file)
+
 # --- Functions ---
+def write():
+    with open(file_path, "w", newline="") as file:
+        json.dump(content, file, indent=4)
 
 def get_current_timestamp():
-    # Capture the exact date and time right now
     now = datetime.now()
-    # Format: Year-Month-Day Hour:Minute:Second
-    return now.strftime("%Y-%m-%d %H:%M:%S")
-
-def getLatestId():
-    with open(file_path, "r") as file:
-        # read the whole json and get the largest dictionary's id to up-to-date id count
-        pass
-    return
+    # Format: Day-Month-Year Hour:Minute:Second
+    return now.strftime("%d-%m-%Y %H:%M:%S")
 
 def addTask(id, desc):
-
+    new_id = id+1
     task = {
-        "id": id,
+        "id": new_id,
         "description": desc,
         "status": "to-do",
-        "createdAt": get_current_timestamp(), # timestamp
+        "createdAt": get_current_timestamp(),
         "updatedAt": None # or timestamp when it does get updated 
     }
+    content["tasks"].append(task)
+    content["last_id"] = new_id
+    write()
 
-    with open(file_path, "a") as file:
-        # json.dump(task, file)
-        pass
-    print(f"task {id} has been added!")
+    print(f"task {new_id} has been added!")
+
+def TaskFound(id):
+    for task in content["tasks"]:
+        if task["id"] == id:
+            return task 
+    return None
 
 def updateTask(id, new_desc):
-    if os.path.exists(file_path):
-        with open(file_path, "r") as file:
-            pass
-            # open json and update the task, add its updatedAt attribute, then write back to the file
+    task = TaskFound(id)
+    if task:
+        idx = content["tasks"].index(task)
+        content["tasks"][idx]["description"] = new_desc
+        content["tasks"][idx]["updatedAt"] = get_current_timestamp()
+        write()
+        print(f"task {id} has been updated!")
     else:
-        print(f"task of such id doesnt exist")
+        print(f"task of id {id} doesn't exist")
 
 def deleteTask(id):
-    choice = input("Are you sure? (Y/N): ")
-    if choice.lower() == 'y':
-        # read the whole json
-        # pop that item/task to delete
-        # write back the new json to file
-        pass
+    task = TaskFound(id)
+    if task:
+        choice = input("Are you sure? (Y/N): ")
+        if choice.lower() == 'y':
+            content["tasks"].remove(task)
+            write()
+            print(f"task {id} has been deleted.")
+        elif choice.lower() == 'n':
+            return
+    else:
+        print(f"task of id {id} doesn't exist")
 
 def markTask(id, status):
-    # read the whole json
-    # update the task's status to update (if it even exists)
-    # write back to the file
-    print(f"task {id} has been marked '{status}'")
+    task = TaskFound(id)
+    if task:
+        idx = content["tasks"].index(task)
+        content["tasks"][idx]["status"] = status
+        write()
+        print(f"task {id} has been marked '{status}'")
+    else:
+        print(f"task of id {id} doesn't exist")
 
 def listTasks(status):
     if status:
         print(f"listing all tasks of status: {status}!")
+        for task in content["tasks"]:
+            if task["status"] == status:
+                print(task)
     else:
-        print("listing tasks of all categories!")
-    # read the whole json and print the tasks who are of status 'status'
-    pass
+        print("listing tasks of all categories.")
+        for task in content["tasks"]:
+            print(task)
 
 # --- Logic for running each command ---
 
-id_count = getLatestId()
-
 if args.action == "add":
-    addTask(id_count, args.description)
-    # id_count = id_count + 1
+    addTask(content["last_id"], args.description)
 
 elif args.action == "update":
     updateTask(args.id, args.New_description)
@@ -123,8 +139,14 @@ elif args.action == "update":
 elif args.action == "delete":
     deleteTask(args.id)
 
-elif args.action in ("mark-to-do" , "mark-in-progress", "mark-done"):
-    markTask(args.id, args.status)
+elif args.action == "mark-to-do":
+    markTask(args.id, "to-do") 
+
+elif args.action == "mark-in-progress":
+    markTask(args.id, "in-progress")
+
+elif args.action == "mark-done":
+    markTask(args.id, "done")
 
 elif args.action == "list":
     listTasks(args.status)
